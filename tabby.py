@@ -11,7 +11,6 @@ import numpy as np
 import robust as rb
 import thacherphot as tp
 import hcongrid as h
-from photutils.background import Background2D
 from astropy import wcs
 import pdb
 

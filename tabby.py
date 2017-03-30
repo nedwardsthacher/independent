@@ -8,6 +8,7 @@ Created on Mon Mar 20 15:46:50 2017
 # optimal aperture - line 880
 # master bias - line 328
 # secz - line 1044
+# total flux - line 998
 
 import matplotlib; matplotlib.use('Agg')
 from astropy.io import fits
@@ -35,20 +36,16 @@ def subtract_bias(files,dir='/Users/nickedwards/python/independent/'):
     bias_image, bias_header = fits.getdata(dir+'master_bias.fits',header=True)
 
     # go through all files and subtract bias from them
-    # is there a better way of doing this?
-    images = np.array([])
-    headers = []
+    data = {'image':np.zeros((len(files),2048,2048)), 'header':[]}
     for i in range(len(files)):
         image, header = fits.getdata(files[i],header=True)
         pdb.set_trace()
-        image = image - bias_image
-        # need to work on adding 2D array into this so that images[i] is an image
-        images = np.append(images, image)
-        headers = np.append(headers, header)
+        data['image'][i,:,:] = image - bias_image
+        data['header'] = np.append(data['header'], header)
 
     # for divide_flat
     # maybe write new files after all calibration as _solved_calibrated.fits?
-    return images, headers
+    return data
 
 # 2. flat divide
 # divide each image by the master flat
@@ -59,8 +56,8 @@ def divide_flat(files,dir='/Users/nickedwards/python/independent/',fil='V'):
 
     # take the files and bias subtract them
     #check to make sure the files and fil are the same?
-    images, headers = subtract_bias(files)
+    data = subtract_bias(files)
 
-    for i in range(len(images)): images[i] /= flat_image
+    for i in range(len(data['image'])): data['image'][i] /= flat_image
 
-    return images, headers
+    return data

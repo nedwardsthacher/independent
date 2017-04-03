@@ -10,6 +10,11 @@ Created on Mon Mar 20 15:46:50 2017
 # secz - line 1044
 # total flux - line 998
 
+# ra dec -> xy: units degrees
+# do_cal feed files, bias, flat, write out with tag _cal
+# add comment to header for solved and cal and make a check file ()
+# go back to optimal and fix it so it takes files
+
 import matplotlib; matplotlib.use('Agg')
 from astropy.io import fits
 import matplotlib.pyplot as plt
@@ -28,6 +33,8 @@ date = np.array(['../2017Mar23'])
 # can import thacherphot as tp and just do it on bellerophon
 # get files and do_astrometry(files)
 
+files, fct = tp.get_files(dir='/Users/nickedwards/python/independent/',prefix='KIC')
+
 # 1. bias subtract
 # subtract bias from each frame
 def subtract_bias(files,dir='/Users/nickedwards/python/independent/'):
@@ -39,9 +46,8 @@ def subtract_bias(files,dir='/Users/nickedwards/python/independent/'):
     data = {'image':np.zeros((len(files),2048,2048)), 'header':[]}
     for i in range(len(files)):
         image, header = fits.getdata(files[i],header=True)
-        pdb.set_trace()
         data['image'][i,:,:] = image - bias_image
-        data['header'] = np.append(data['header'], header)
+        data['header'].append(header)
 
     # for divide_flat
     # maybe write new files after all calibration as _solved_calibrated.fits?

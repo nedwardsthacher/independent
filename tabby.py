@@ -11,9 +11,7 @@ Created on Mon Mar 20 15:46:50 2017
 # total flux - line 998
 
 # ra dec -> xy: units degrees
-# do_cal feed files, bias, flat, write out with tag _cal
-# add comment to header for solved and cal and make a check file ()
-# go back to optimal and fix it so it takes files
+
 
 import matplotlib; matplotlib.use('Agg')
 from astropy.io import fits
@@ -67,3 +65,4 @@ def divide_flat(files,dir='/Users/nickedwards/python/independent/',fil='V'):
     for i in range(len(data['image'])): data['image'][i] /= flat_image
 
     return data
+

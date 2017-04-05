@@ -202,25 +202,14 @@ def do_astrometry(files,clobber=False,pixlo=0.1,pixhi=1.5,ra=None,dec=None,objec
 
     return
 
-def do_cal(files,bias_dir='/data/ThacherObs/ACP Imaging/calfiles/...',flat_dir='flat dir',fil='V'):
-    """
-    Overview:
-    ---------
-    Takes files and bias and flar dirs and calibrates files and writes with tag _cal
-    """
-    # os.pas.isfile? to check for masterbias and masterflats in respective dirs or line 150
-    bias = fits.getdata(bias_dir+'master_bias.fits')
-    flat = fits.getdata(dir+'master_flat_'+fil+'.fits')
-
-    for file in files:
-
-    #find filter based off header
-# NEED TO FIND UNITS!!
+# NEED TO FIND UNITS for ra dec = decimal degrees
 def radec_to_xy(ra,dec,header):
     """
     Overview:
     ---------
     Takes a ra, a dec, and a header and returns the x,y position of the source in the image
+    ra and dec are degrees
+    x and y are pixel values
     """
     w = wcs.WCS(header)
     world = np.array([[ra, dec]])
@@ -234,6 +223,8 @@ def xy_to_radec(x,y,header):
     Overview:
     ---------
     Takes an x, a y, and a header returns ra and dec of source
+    x and y are pixel values
+    ra and de are degrees
     """
     w = wcs.WCS(header)
     pix = np.array([[x,y]])

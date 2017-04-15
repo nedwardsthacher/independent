@@ -73,7 +73,12 @@ import matplotlib.patheffects as PathEffects
 #            curves for throughput measurements.
 #
 #----------------------------------------------------------------------
+import ephem
 
+obs = ephem.Observer()
+obs.lat = '34 28 00.5'
+obs.lon = '-119 10 38.5'
+obs.elevation = 494.7
 # For interactive plotting
 plt.ion()
 
@@ -202,7 +207,6 @@ def do_astrometry(files,clobber=False,pixlo=0.1,pixhi=1.5,ra=None,dec=None,objec
 
     return
 
-# NEED TO FIND UNITS for ra dec = decimal degrees
 def radec_to_xy(ra,dec,header):
     """
     Overview:
@@ -210,6 +214,7 @@ def radec_to_xy(ra,dec,header):
     Takes a ra, a dec, and a header and returns the x,y position of the source in the image
     ra and dec are degrees
     x and y are pixel values
+    check header for astrometical slove
     """
     w = wcs.WCS(header)
     world = np.array([[ra, dec]])
@@ -911,37 +916,20 @@ def choose_refs(file,target_ra,target_dec,bias=None,dark=None,flat=None,
 #            coords in "image" using defined skyradii = [in,out]       #
 #----------------------------------------------------------------------#
 
-def optimal_aperture(x,y,image,header,skyrad,ra_dec=None,aperture=None,use_old=False):
+def optimal_aperture(image,header,skyrad,x=None,y=None,ra=None,dec=None,aperture=None,use_old=False):
 
-    import ephem
+    if ra == None and dec == None:
+        ra,dec = xy_to_radec(x,y,header)
+    elif x == None and y == None:
+        x,y = radec_to_xy(ra,dec,header)
 
-    obs = ephem.Observer()
-    obs.lat = '34 28 00.5'
-    obs.lon = '-119 10 38.5'
-    obs.elevation = 494.7
-
-    if ra_dec == None:
-        ra = angcor(header['OBJCTRA']).d
-        dec = angcor(header['OBJCTDEC']).d
-        star = ephem.FixedBody()
-        star._ra = angcor(ra).getHmsStr(canonical=True)
-        star._dec = angcor(dec).getDmsStr(canonical=True)
-        star.compute(obs)
-        secz = 1.0/np.cos(np.pi/2.0 - star.alt)
-    elif ra_dec != None:
-    # computes secz then changes ra (x) and dec (y) to x,y in  the image
-        star = ephem.FixedBody()
-        star._ra = angcor(x).getHmsStr(canonical=True)
-        star._dec = angcor(y).getDmsStr(canonical=True)
-        star.compute(obs)
-        secz = 1.0/np.cos(np.pi/2.0 - star.alt)
-
-        w = wcs.WCS(header)
-        world0 = np.array([[x, y]])
-        pix0 = w.wcs_world2pix(world0,1) # Pixel coordinates of (RA, DEC)
-        x = pix0[0,0]
-        y = pix0[0,1]
-
+    jd = header["jd"] + (header["exptime"]/2.0)/(24.0*3600.0)
+    obs.date = jd-2415020.0
+    star = ephem.FixedBody()
+    star._ra = angcor(ra).getHmsStr(canonical=True)
+    star._dec = angcor(dec).getDmsStr(canonical=True)
+    star.compute(obs)
+    secz = 1.0/np.cos(np.pi/2.0 - star.alt)
 # Create zoom in of target
     sz = 100
     plt.figure(2)
@@ -1041,10 +1029,10 @@ def optimal_aperture(x,y,image,header,skyrad,ra_dec=None,aperture=None,use_old=F
 
     dict = {'optimal_aperture':op_ap, 'xcen':xval, 'ycen':yval, 'fwhm':fwhm,
             'aspect':aspect,'snrmax':snrmax,'totflux':totflux, 'totflux_aperture':totap,
-            'chisq':chisq,'curve_of_growth':[ap,cog]}
+            'chisq':chisq,'curve_of_growth':[ap,cog],'secz':secz}
 
     if use_old:
-        return op_ap,xval,yval,fwhm,aspect,snrmax,totflux,totap,chisq
+        return op_ap,xval,yval,fwhm,aspect,snrmax,totflux,totap,chisq,secz
     else:
         return dict
 

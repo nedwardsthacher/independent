@@ -216,12 +216,16 @@ def radec_to_xy(ra,dec,header):
     x and y are pixel values
     check header for astrometical slove
     """
-    w = wcs.WCS(header)
-    world = np.array([[ra, dec]])
-    pix = w.wcs_world2pix(world,1) # Pixel coordinates of (RA, DEC)
-    x = pix[0,0]
-    y = pix[0,1]
-    return x,y
+    if (header['CRVAL1']):
+        w = wcs.WCS(header)
+        world = np.array([[ra, dec]])
+        pix = w.wcs_world2pix(world,1) # Pixel coordinates of (RA, DEC)
+        x = pix[0,0]
+        y = pix[0,1]
+        return x,y
+    else:
+        print(header['OBJECT'] + " has inadequate astrometry information")
+        return None,None
 
 def xy_to_radec(x,y,header):
     """
@@ -231,12 +235,16 @@ def xy_to_radec(x,y,header):
     x and y are pixel values
     ra and de are degrees
     """
-    w = wcs.WCS(header)
-    pix = np.array([[x,y]])
-    world = w.wcs_pix2world(pix,1)
-    ra = world[0,0]
-    dec = world[0,1]
-    return ra,dec
+    if (header['CRVAL1']):
+        w = wcs.WCS(header)
+        pix = np.array([[x,y]])
+        world = w.wcs_pix2world(pix,1)
+        ra = world[0,0]
+        dec = world[0,1]
+        return ra,dec
+    else:
+        print(header['OBJECT'] + " has inadequate astrometry information")
+        return None,None
 
 #----------------------------------------------------------------------#
 # done_in:                                                             #

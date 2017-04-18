@@ -5,7 +5,10 @@ Created on Mon Mar 20 15:46:50 2017
 @author: nickedwards
 """
 
-# optimal aperture - line 918
+# counts per mag = totflux/mag
+# mags per airmass = slope from fit
+# gain = e- / count
+#
 
 
 import matplotlib; matplotlib.use('Agg')
@@ -74,7 +77,7 @@ def reduc(files,dir='/Users/nickedwards/python/independent/'):
         data[key] = {'datetime':[],'optimal_aperture':[],
             'xcen':[],'ycen':[],'fwhm':[],'aspect':[],
             'snrmax':[],'totflux':[],'totflux_aperture':[],
-            'chisq':[],'curve_of_growth':[],'secz':[]}
+            'chisq':[],'curve_of_growth':[],'secz':[],'totfluxerr':[]}
 
     # keys for optimal aperture dict but not any extra keys
     dkeys = np.array(data.keys())
@@ -99,6 +102,7 @@ def reduc(files,dir='/Users/nickedwards/python/independent/'):
         data[key]['chisq'] = np.append(data[key]['chisq'],op['chisq'])
         data[key]['curve_of_growth'] = np.append(data[key]['curve_of_growth'],op['curve_of_growth'])
         data[key]['secz'] = np.append(data[key]['secz'],op['secz'])
+        data[key]['totfluxerr'] = np.append(data[key]['totfluxerr'],op['totfluxerr'])
         datetime = cal['header'][i]['DATE'] + " " + cal['header'][i]['UT']
         data[key]['datetime'] = np.append(data[key]['datetime'],datetime)
 
@@ -113,20 +117,38 @@ def pt2(data):
     GDEmag = np.array([-2.5*np.log10(flux) for flux in data['GD391E']['totflux']])
     KICmag = np.array([-2.5*np.log10(flux) for flux in data['KIC8462852']['totflux']])
 
-    SA = {'mag':SAmag,'secz':data['SA38326']['secz']}
-    GDA = {'mag':GDAmag,'secz':data['GD391A']['secz']}
-    GDE = {'mag':GDEmag,'secz':data['GD391E']['secz']}
-    KIC = {'mag':KICmag,'secz':data['KIC8462852']['secz']}
+    SA = {'mag':SAmag,'secz':data['SA38326']['secz'],
+          'totflux':data['SA38326']['totflux'],
+          'totfluxerr':data['SA38326']['totfluxerr']}
+    GDA = {'mag':GDAmag,'secz':data['GD391A']['secz'],
+           'totflux':data['GD391A']['totflux'],
+           'totfluxerr':data['GD391A']['totfluxerr']}
+    GDE = {'mag':GDEmag,'secz':data['GD391E']['secz'],
+           'totflux':data['GD391E']['totflux'],
+           'totflux':data['GD391E']['totflux']}
+    KIC = {'mag':KICmag,'secz':data['KIC8462852']['secz'],
+           'totflux':data['KIC8462852']['totflux'],
+           'totfluxerr':data['KIC8462852']['totfluxerr']}
 
     SA['fit'] = np.polyfit(SA['secz'],SA['mag'],1)
     GDA['fit'] = np.polyfit(GDA['secz'],GDA['mag'],1)
     GDE['fit'] = np.polyfit(GDE['secz'],GDE['mag'],1)
     KIC['fit'] = np.polyfit(KIC['secz'],KIC['mag'],1)
 
+    SA['m/a'] = SA['fit'][0]
+    GDA['m/a'] = GDA['fit'][0]
+    GDE['m/a'] = GDE['fit'][0]
+    KIC['m/a'] = KIC['fit'][0]
+
     SA['b'] = 9.947 - SA['fit'][1]
     GDA['b'] = 12.315 - GDA['fit'][1]
     GDE['b'] = 12.409 - GDE['fit'][1]
     KIC['b'] = 12.01 - KIC['fit'][1]
+
+    SA['c/m'] = SA['totflux']/SA['b']
+    GDA['c/m'] = GDA['totflux']/GDA['b']
+    GDE['c/m'] = GDE['totflux']/GDE['b']
+    KIC['c/m'] = KIC['totflux']/KIC['b']
 
     data = {'SA':SA,'GDA':GDA,'GDE':GDE,'KIC':KIC}
 

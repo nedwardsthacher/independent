@@ -24,6 +24,7 @@ from quick_image import *
 import pdb
 from datetime import datetime as dt
 from matplotlib.dates import DateFormatter
+import pandas as pd
 
 # 0. astrometrically solve images
 # based on the dates and stars above
@@ -104,6 +105,7 @@ def reduc(files,dir='/Users/nickedwards/python/independent/'):
         data[key]['secz'] = np.append(data[key]['secz'],op['secz'])
         data[key]['totfluxerr'] = np.append(data[key]['totfluxerr'],op['totfluxerr'])
         datetime = cal['header'][i]['DATE'] + " " + cal['header'][i]['UT']
+        datetime = dt.strptime(datetime,'%d/%m/%y %H:%M:%S')
         data[key]['datetime'] = np.append(data[key]['datetime'],datetime)
 
     return data
@@ -119,23 +121,32 @@ def pt2(data):
 
     SA = {'mag':SAmag,'secz':data['SA38326']['secz'],
           'totflux':data['SA38326']['totflux'],
-          'totfluxerr':data['SA38326']['totfluxerr']}
+          'totfluxerr':data['SA38326']['totfluxerr'],
+          'datetime':data['SA38326']['datetime']}
     GDA = {'mag':GDAmag,'secz':data['GD391A']['secz'],
            'totflux':data['GD391A']['totflux'],
-           'totfluxerr':data['GD391A']['totfluxerr']}
+           'totfluxerr':data['GD391A']['totfluxerr'],
+           'datetime':data['GD391A']['datetime']}
     GDE = {'mag':GDEmag,'secz':data['GD391E']['secz'],
            'totflux':data['GD391E']['totflux'],
-           'totflux':data['GD391E']['totflux']}
+           'totfluxerr':data['GD391E']['totfluxerr'],
+           'datetime':data['GD391E']['datetime']}
     KIC = {'mag':KICmag,'secz':data['KIC8462852']['secz'],
            'totflux':data['KIC8462852']['totflux'],
-           'totfluxerr':data['KIC8462852']['totfluxerr']}
+           'totfluxerr':data['KIC8462852']['totfluxerr'],
+           'datetime':data['KIC8462852']['datetime']}
 
     SA['fit'] = np.polyfit(SA['secz'],SA['mag'],1)
     GDA['fit'] = np.polyfit(GDA['secz'],GDA['mag'],1)
     GDE['fit'] = np.polyfit(GDE['secz'],GDE['mag'],1)
     KIC['fit'] = np.polyfit(KIC['secz'],KIC['mag'],1)
 
-    SA['m/a'] = SA['fit'][0]
+    SA['m/a'] = []; SAma = SA['fit'][0].item()
+    GDA['m/a'] = np.array([])
+    GDE['m/a'] = np.array([])
+    KIC['m/a'] = np.array([])
+
+    SA['m/a'] = [np.append(SA['m/a'],SAma) for i in range(len(SA['mag']))]
     GDA['m/a'] = GDA['fit'][0]
     GDE['m/a'] = GDE['fit'][0]
     KIC['m/a'] = KIC['fit'][0]
@@ -150,9 +161,18 @@ def pt2(data):
     GDE['c/m'] = GDE['totflux']/GDE['b']
     KIC['c/m'] = KIC['totflux']/KIC['b']
 
-    data = {'SA':SA,'GDA':GDA,'GDE':GDE,'KIC':KIC}
+    SA['mag'] = SA['b']+SA['mag']
+    GDA['mag'] = GDA['b']+GDA['mag']
+    GDE['mag'] = GDE['b']+GDE['mag']
+    KIC['mag'] = KIC['b']+KIC['mag']
+
+    data = {'SA38326':SA,'GD391A':GDA,'GD391E':GDE,'KIC8462852':KIC}
 
     return data
+
+def save(data):
+    frame = pd.DataFrame.from_dict(data)
+    return frame
 
 def plot_fluxes(data):
 
@@ -179,7 +199,7 @@ def plot_fluxes(data):
     plt.xlabel('secz')
     ax = plt.gca()
     ax.grid(True)
-    plt.title('secz vs total flux on ' + data['GD391A']['datetime'][0][0:8])
+    plt.title('secz vs total flux')
     plt.legend(handles=[SAline,GDAline,GDEline,KICline],loc='best')
     plt.show()
 
@@ -190,11 +210,6 @@ def plot_fluxes(data):
     GDAtime = data['GD391A']['datetime']
     GDEtime = data['GD391E']['datetime']
     KICtime = data['KIC8462852']['datetime']
-
-    SAtime = [dt.strptime(time,'%d/%m/%y %H:%M:%S') for time in SAtime]
-    GDAtime = [dt.strptime(time,'%d/%m/%y %H:%M:%S') for time in GDAtime]
-    GDEtime = [dt.strptime(time,'%d/%m/%y %H:%M:%S') for time in GDEtime]
-    KICtime = [dt.strptime(time,'%d/%m/%y %H:%M:%S') for time in KICtime]
 
     SAline, = plt.plot_date(SAtime,SAflux,'ro',label='SA 38-326')
     GDAline, = plt.plot_date(GDAtime,GDAflux,'go',label='GD 391 A')
@@ -207,7 +222,7 @@ def plot_fluxes(data):
     ax.grid(True)
     plt.ylabel('totflux')
     plt.xlabel('time (UT)')
-    plt.title('secz vs total flux on ' + data['GD391A']['datetime'][0][0:8])
+    plt.title('secz vs time')
     plt.legend(handles=[SAline,GDAline,GDEline,KICline],loc='best')
     plt.show()
 
@@ -219,21 +234,21 @@ def plot_mags(data):
 
     x = np.linspace(0,2.5,100)
 
-    SAscatter, = plt.plot(data['SA']['secz'],data['SA']['mag']+data['SA']['b'],'ro')
-    SAy = [data['SA']['fit'][0] * i + (data['SA']['fit'][1]+data['SA']['b']) for i in x]
-    SAmodel, = plt.plot(x,SAy,'r--',label='SA 38-426; mag = '+str(round(data['SA']['fit'][0],3))+'secz'+' + '+str(data['SA']['fit'][1]+data['SA']['b']))
+    SAscatter, = plt.plot(data['SA38326']['secz'],data['SA38326']['mag'],'ro')
+    SAy = [data['SA38326']['fit'][0] * i + (data['SA38326']['fit'][1]+data['SA38326']['b']) for i in x]
+    SAmodel, = plt.plot(x,SAy,'r--',label='SA 38-426; mag = '+str(round(data['SA38326']['fit'][0],3))+'secz'+' + '+str(data['SA38326']['fit'][1]+data['SA38326']['b']))
 
-    GDAscatter, = plt.plot(data['GDA']['secz'],data['GDA']['mag']+data['GDA']['b'],'go')
-    GDAy = [data['GDA']['fit'][0] * i + (data['GDA']['fit'][1]+data['GDA']['b']) for i in x]
-    GDAmodel, = plt.plot(x,GDAy,'g--',label='GD 391 A; mag = '+str(round(data['GDA']['fit'][0],3))+'secz'+' + '+str(data['GDA']['fit'][1]+data['GDA']['b']))
+    GDAscatter, = plt.plot(data['GD391A']['secz'],data['GD391A']['mag'],'go')
+    GDAy = [data['GD391A']['fit'][0] * i + (data['GD391A']['fit'][1]+data['GD391A']['b']) for i in x]
+    GDAmodel, = plt.plot(x,GDAy,'g--',label='GD 391 A; mag = '+str(round(data['GD391A']['fit'][0],3))+'secz'+' + '+str(data['GD391A']['fit'][1]+data['GD391A']['b']))
 
-    GDEscatter, = plt.plot(data['GDE']['secz'],data['GDE']['mag']+data['GDE']['b'],'yo')
-    GDEy = [data['GDE']['fit'][0] * i + (data['GDE']['fit'][1]+data['GDE']['b']) for i in x]
-    GDEmodel, = plt.plot(x,GDEy,'y--',label='GD 391 E; mag = '+str(round(data['GDE']['fit'][0],3))+'secz'+' + '+str(data['GDE']['fit'][1]+data['GDE']['b']))
+    GDEscatter, = plt.plot(data['GD391E']['secz'],data['GD391E']['mag'],'yo')
+    GDEy = [data['GD391E']['fit'][0] * i + (data['GD391E']['fit'][1]+data['GD391E']['b']) for i in x]
+    GDEmodel, = plt.plot(x,GDEy,'y--',label='GD 391 E; mag = '+str(round(data['GD391E']['fit'][0],3))+'secz'+' + '+str(data['GD391E']['fit'][1]+data['GD391E']['b']))
 
-    KICscatter, = plt.plot(data['KIC']['secz'],data['KIC']['mag']+data['KIC']['b'],'bo')
-    KICy = [data['KIC']['fit'][0] * i + (data['KIC']['fit'][1]+data['KIC']['b']) for i in x]
-    KICmodel, = plt.plot(x,KICy,'b--',label='KIC 8462852; mag = '+str(round(data['KIC']['fit'][0],3))+'secz'+' + '+str(data['KIC']['fit'][1]+data['KIC']['b']))
+    KICscatter, = plt.plot(data['KIC8462852']['secz'],data['KIC8462852']['mag'],'bo')
+    KICy = [data['KIC8462852']['fit'][0] * i + (data['KIC8462852']['fit'][1]+data['KIC8462852']['b']) for i in x]
+    KICmodel, = plt.plot(x,KICy,'b--',label='KIC 8462852; mag = '+str(round(data['KIC8462852']['fit'][0],3))+'secz'+' + '+str(data['KIC8462852']['fit'][1]+data['KIC8462852']['b']))
 
     plt.ylabel('corrected mag')
     plt.xlabel('secz')
@@ -242,8 +257,12 @@ def plot_mags(data):
     ax.grid(True)
     plt.legend(handles=[SAmodel,GDAmodel,GDEmodel,KICmodel],loc='best')
     plt.show()
-#files, fct = tp.get_files(dir='/Users/nickedwards/python/independent/',prefix='*',tag='solved')
-#cal = divide_flat(files)
-#data = reduc(files)
-#plot_fluxes(data)
-#pt2(data)
+"""
+files, fct = tp.get_files(dir='/Users/nickedwards/python/independent/',prefix='*',tag='solved')
+cal = divide_flat(files)
+data = reduc(files)
+plot_fluxes(data)
+stuff = pt2(data)
+plot_mags(stuff)
+csv = save(stuff)
+"""

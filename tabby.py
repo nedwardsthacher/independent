@@ -49,7 +49,7 @@ def divide_flat(files,dir='/Users/nickedwards/python/independent/',fil='V'):
 
     flat_image, flat_header = fits.getdata(dir+'master_flat_'+fil+'.fits', header= True)
 
-    data = subtract_bias(files)
+    data = subtract_bias(files,dir=dir)
 
     for i in range(len(data['image'])): data['image'][i] /= flat_image
 

@@ -72,10 +72,14 @@ def reduc(files,dir='/Users/nickedwards/python/independent/'):
     dkeys = dkeys[dkeys != 'datetime']
 
     for i in range(len(files)):
+        print files[i]
         ra = angcor(cal['header'][i]['RA']).d
+        print ra
         dec = angcor(cal['header'][i]['DEC']).d
+        print dec
         op = tp.optimal_aperture(cal['image'][i],cal['header'][i],[20,30],ra=ra,dec=dec)
         key = cal['header'][i]['OBJECT']
+        print key
         data[key]['optimal_aperture'] = np.append(data[key]['optimal_aperture'],op['optimal_aperture'])
         data[key]['xcen'] = np.append(data[key]['xcen'],op['xcen'])
         data[key]['ycen'] = np.append(data[key]['ycen'],op['ycen'])
@@ -258,4 +262,10 @@ import matplotlib; matplotlib.use('Agg')
 import thacherphot as tp
 files, fct = tp.get_files(dir='/home/student/nedwards/2017Apr25/',suffix='V.fts')
 tp.do_astrometry(files)
+"""
+"""
+import matplotlib; matplotlib.use('Agg')
+import thacherphot as tp
+import tabby as t
+t.finish()
 """

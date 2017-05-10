@@ -94,90 +94,6 @@ def reduc(files,dir='/Users/nickedwards/python/independent/'):
 
     return data
 
-def pt2(data):
-
-    SAmag = np.array([-2.5*np.log10(flux) for flux in data['SA38326']['totflux']])
-    GDAmag = np.array([-2.5*np.log10(flux) for flux in data['GD391A']['totflux']])
-    GDEmag = np.array([-2.5*np.log10(flux) for flux in data['GD391E']['totflux']])
-    KICmag = np.array([-2.5*np.log10(flux) for flux in data['KIC8462852']['totflux']])
-
-    SA = {'raw mag':SAmag,'secz':data['SA38326']['secz'],
-          'totflux':data['SA38326']['totflux'],
-          'totfluxerr':data['SA38326']['totfluxerr'],
-          'datetime':data['SA38326']['datetime']}
-    GDA = {'raw mag':GDAmag,'secz':data['GD391A']['secz'],
-           'totflux':data['GD391A']['totflux'],
-           'totfluxerr':data['GD391A']['totfluxerr'],
-           'datetime':data['GD391A']['datetime']}
-    GDE = {'raw mag':GDEmag,'secz':data['GD391E']['secz'],
-           'totflux':data['GD391E']['totflux'],
-           'totfluxerr':data['GD391E']['totfluxerr'],
-           'datetime':data['GD391E']['datetime']}
-    KIC = {'raw mag':KICmag,'secz':data['KIC8462852']['secz'],
-           'totflux':data['KIC8462852']['totflux'],
-           'totfluxerr':data['KIC8462852']['totfluxerr'],
-           'datetime':data['KIC8462852']['datetime']}
-
-    SAfit = np.polyfit(SA['secz'],SA['raw mag'],1)
-    GDAfit = np.polyfit(GDA['secz'],GDA['raw mag'],1)
-    GDEfit = np.polyfit(GDE['secz'],GDE['raw mag'],1)
-
-    SA['m/a'] = np.zeros(len(SA['raw mag']))
-    GDA['m/a'] = np.zeros(len(GDA['raw mag']))
-    GDE['m/a'] = np.zeros(len(GDE['raw mag']))
-    KIC['m/a'] = np.zeros(len(KIC['raw mag']))
-
-    for i in range(len(SA['m/a'])): SA['m/a'][i] = SAfit[0].item()
-    for i in range(len(GDA['m/a'])): GDA['m/a'][i] = GDAfit[0].item()
-    for i in range(len(GDE['m/a'])): GDE['m/a'][i] = GDEfit[0].item()
-    KICma = SAweight*SAfit[0].item()+GDAweight*GDAfit[0].item()+GDEweight*GDEfit[0].item()
-    for i in range(len(KIC['m/a'])): KIC['m/a'][i] = KICma
-
-    SA['b'] = np.zeros(len(SA['raw mag']))
-    GDA['b'] = np.zeros(len(GDA['raw mag']))
-    GDE['b'] = np.zeros(len(GDE['raw mag']))
-    KIC['b'] = np.zeros(len(KIC['raw mag']))
-
-    for i in range(len(SA['b'])): SA['b'][i] = 9.947 - SAfit[1]
-    for i in range(len(GDA['b'])): GDA['b'][i] = 12.315 - GDAfit[1]
-    for i in range(len(GDE['b'])): GDE['b'][i] = 12.409 - GDEfit[1]
-    KICb = SAweight*(9.947 - SAfit[1])+GDAweight*(12.315 - GDAfit[1])+GDEweight*(12.409 - GDEfit[1])
-    for i in range(len(KIC['b'])): KIC['b'][i] = KICb
-
-    # is this calc right because there should be more counts for SA but fewer
-    # mags b/c mags are weird, so the ratio will be off? inversely proportional
-    SA['c/m'] = SA['totflux']/9.947
-    GDA['c/m'] = GDA['totflux']/12.315
-    GDE['c/m'] = GDE['totflux']/12.409
-    KIC['c/m'] = KIC['totflux']/12.01
-    # different lengths possibly
-    # SAweight*(SA['totflux']/9.947)+GDAweight*(GDA['totflux']/12.315)+GDEweight*(GDE['totflux']/12.409)
-
-    # count per mag at 0 airmass
-
-    SA['raw mag'] = SA['b']+SA['raw mag']
-    GDA['raw mag'] = GDA['b']+GDA['raw mag']
-    GDE['raw mag'] = GDE['b']+GDE['raw mag']
-    KIC['raw mag'] = KIC['b']+KIC['raw mag']
-
-    SA['mag0'] = np.zeros(len(SA['raw mag']))
-    GDA['mag0'] = np.zeros(len(GDA['raw mag']))
-    GDE['mag0'] = np.zeros(len(GDE['raw mag']))
-    KIC['mag0'] = np.zeros(len(KIC['raw mag']))
-
-    # b = -ah+k
-    # a = m/a
-    # h = secz
-    # k = raw mag
-    for i in range(len(SA['mag0'])): SA['mag0'][i] = SA['raw mag'][i] - SA['m/a'][i]*SA['secz'][i]
-    for i in range(len(GDA['mag0'])): GDA['mag0'][i] = GDA['raw mag'][i] - GDA['m/a'][i]*GDA['secz'][i]
-    for i in range(len(GDE['mag0'])): GDE['mag0'][i] = GDE['raw mag'][i] - GDE['m/a'][i]*GDE['secz'][i]
-    for i in range(len(KIC['mag0'])): KIC['mag0'][i] = KIC['raw mag'][i] - KIC['m/a'][i]*KIC['secz'][i]
-
-    data = {'SA38326':SA,'GD391A':GDA,'GD391E':GDE,'KIC8462852':KIC}
-
-    return data
-
 def standards(data):
 
     SAmag = np.array([-2.5*np.log10(flux) for flux in data['SA38326']['totflux']])
@@ -225,13 +141,17 @@ def standards(data):
     GDA['mag'] = GDA['raw mag'] + 12.315 - GDAfit[1]
     GDE['mag'] = GDE['raw mag'] + 12.409 - GDEfit[1]
 
-    SAcmfit = np.polyfit(SA['secz'],SA['totflux'],1)
-    GDAcmfit = np.polyfit(GDA['secz'],GDA['totflux'],1)
-    GDEcmfit = np.polyfit(GDE['secz'],GDE['totflux'],1)
+    SAcmfit = np.polyfit(SA['secz'],SA['totflux']/10,1)
+    GDAcmfit = np.polyfit(GDA['secz'],GDA['totflux']/90,1)
+    GDEcmfit = np.polyfit(GDE['secz'],GDE['totflux']/100,1)
 
     SA['c0'] = SAcmfit[1].item()*(10**(.4*9.947))
     GDA['c0'] = GDAcmfit[1].item()*(10**(.4*12.315))
     GDE['c0'] = GDEcmfit[1].item()*(10**(.4*12.409))
+
+    SA['Mzp'] = -2.5*np.log10(1/SA['c0'])
+    GDA['Mzp'] = -2.5*np.log10(1/GDA['c0'])
+    GDE['Mzp'] = -2.5*np.log10(1/GDE['c0'])
 
     SA['mag0'] = SA['mag'] - SA['m/a']*SA['secz']
     GDA['mag0'] = GDA['mag'] - GDA['m/a']*GDA['secz']
@@ -247,23 +167,25 @@ def source(data, standard):
            'totfluxerr':data['KIC8462852']['totfluxerr'],
            'datetime':data['KIC8462852']['datetime']}
 
-    KIC['raw mag'] = np.array([-2.5*np.log10(flux) for flux in KIC['totflux']])
+    mzpave = (standard['SA38326']['Mzp']+standard['GD391A']['Mzp']+standard['GD391E']['Mzp'])/3
+    KIC['raw mag ave'] = mzpave-2.5*np.log10(KIC['totflux']/60)
+    maave = (standard['SA38326']['m/a']+standard['GD391A']['m/a']+standard['GD391E']['m/a'])/3
 
-    b = SAweight*standard['SA38326']['b']+GDAweight*standard['GD391A']['b']+GDEweight*standard['GD391E']['b']
-    ma = SAweight*standard['SA38326']['m/a']+GDAweight*standard['GD391A']['m/a']+GDEweight*standard['GD391E']['m/a']
-
-    KIC['mag0'] = KIC['raw mag']+b - ma*KIC['secz']
-    #brighter than expected probably because SA is weird
+    KIC['mag0 ave'] = KIC['raw mag ave'] - maave*KIC['secz']
     return KIC
 
-def save(data,old=True):
-    frame = pd.DataFrame.from_dict(data)
-    if old:
-        old = pd.read_csv('/Users/nickedwards/python/independent/tabby.csv')
-        # check to see if you reassign dataframes if index follow over
-        # old = old[old['datetime']]
-
+def save(data):
+    tabby = pd.DataFrame.from_dict(data)
+    tabby.to_csv('/home/student/nedwards/independent/')
     return frame
+
+def finish():
+    files, fct = tp.get_files(dir='/home/student/nedwards/2017A*/',suffix='solved.fits')
+    data = reduc(files,dir='/home/student/nedwards/independent/')
+    standard = standards(data)
+    tabby = source(stuff,standard)
+    save(tabby)
+    return
 
 def plot_fluxes(data):
 
